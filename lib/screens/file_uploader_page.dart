@@ -1,25 +1,128 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
+import 'form_selector_page.dart';
 
-class FileUploaderPage extends StatelessWidget {
+class FileUploaderPage extends StatefulWidget {
   const FileUploaderPage({super.key});
 
-  void _onAddPressed() {
-    // You can implement action here (e.g., open a file select dialog, etc.)
+  @override
+  State<FileUploaderPage> createState() => _FileUploaderPageState();
+}
+
+class _FileUploaderPageState extends State<FileUploaderPage> {
+  List<String> uploadedFiles = [];
+
+  Future<void> pickFile() async {
+    try {
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+        allowMultiple: true,
+      );
+
+      if (result != null && result.files.isNotEmpty) {
+        setState(() {
+          for (var file in result.files) {
+            if (!uploadedFiles.contains(file.name)) {
+              uploadedFiles.add(file.name);
+            }
+          }
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error picking files: $e')),
+      );
+    }
+  }
+
+  void goToFormSelector() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const FormSelectorPage()),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFFAFBFF),
       appBar: AppBar(
-        title: const Text('Upload Files'),
+        title: const Text('Uploaded PDFs'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.black,
+        elevation: 1,
       ),
-      body: const SizedBox(), // Empty body
-      floatingActionButton: FloatingActionButton(
-        onPressed: _onAddPressed,
-        backgroundColor: Colors.blueAccent,
-        child: const Icon(Icons.add),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: uploadedFiles.isEmpty
+            ? const Center(
+          child: Text(
+            'No files uploaded',
+            style: TextStyle(color: Colors.grey),
+            textAlign: TextAlign.center,
+          ),
+        )
+            : ListView.builder(
+          itemCount: uploadedFiles.length,
+          itemBuilder: (context, index) {
+            final file = uploadedFiles[index];
+            return Container(
+              margin: const EdgeInsets.symmetric(vertical: 5),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEEF0F5),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.picture_as_pdf, color: Colors.black54),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      file,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.black87,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          FloatingActionButton(
+            heroTag: 'uploadBtn',
+            backgroundColor: Colors.blue,
+            onPressed: pickFile,
+            child: const Icon(Icons.add),
+          ),
+          const SizedBox(height: 20),
+          if (uploadedFiles.isNotEmpty)
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                padding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: goToFormSelector,
+              child: const Text(
+                'Continue to Form',
+                style: TextStyle(color: Colors.white, fontSize: 16),
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
